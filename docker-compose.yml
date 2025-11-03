@@ -27,8 +27,19 @@ services:
       - POSTGRES_PASSWORD=root
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./auth.sql:/docker-entrypoint-initdb.d/auth.sql
 
-
+  GetAuthLoadBalancer:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/main/java/com/personal/development/cloud/Auth/nginx/auth.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - authworker-1
+      - authworker-2
+      - authworker-3
+    
   GetServiceLoadBalancer:
     image: nginx:latest
     ports:
@@ -40,6 +51,36 @@ services:
       - getserviceworker-2
       - getserviceworker-3
 
+
+
+  authworker-1:
+    build:
+      context: .
+      dockerfile: AuthController
+    container_name: authworker-1
+    expose:
+      - 8080
+    depends_on:
+      - AuthDatabase
+  authworker-2:
+    build:
+      context: .
+      dockerfile: AuthController
+    container_name: authworker-2
+    expose:
+      - 8080
+    depends_on:
+      - AuthDatabase
+  
+  authworker-3:
+    build:
+      context: .
+      dockerfile: AuthController
+    container_name: authworker-3
+    expose:
+      - 8080
+    depends_on:
+      - AuthDatabase
 
   getserviceworker-1:
     build:
