@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "mvn clean install && docker-compose up --build",
+    "build": "cd auth-service && mvn clean package -DskipTests && cd ../get-service && mvn clean package -DskipTests && cd .. && docker-compose up --build",
     "docker-compose down": "docker-compose down",
     "docker-compose restart": "docker-compose restart",
     "docker-compose logs": "docker-compose logs -f",

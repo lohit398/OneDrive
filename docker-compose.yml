@@ -6,6 +6,13 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+  
+  JWTCache:
+    image: redis:latest
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
 
   FileDatabase:
     image: mongo:latest
@@ -18,7 +25,7 @@ services:
       - mongo_data:/data/db
 
   AuthDatabase:
-    image: postgres:latest
+    image: postgres:17-alpine
     ports:
       - "5432:5432"
     environment:
@@ -28,24 +35,29 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./auth.sql:/docker-entrypoint-initdb.d/auth.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   GetAuthLoadBalancer:
     image: nginx:latest
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
-      - ./src/main/java/com/personal/development/cloud/Auth/nginx/auth.conf:/etc/nginx/nginx.conf
+      - ./auth-service/nginx/auth.conf:/etc/nginx/nginx.conf
     depends_on:
       - authworker-1
       - authworker-2
       - authworker-3
-    
+
   GetServiceLoadBalancer:
     image: nginx:latest
     ports:
-      - "80:80"
+      - "8082:80"
     volumes:
-      - ./src/main/java/com/personal/development/cloud/GetService/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./get-service/src/main/java/com/personal/development/cloud/GetService/nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - getserviceworker-1
       - getserviceworker-2
@@ -55,36 +67,45 @@ services:
 
   authworker-1:
     build:
-      context: .
-      dockerfile: AuthController
+      context: ./auth-service
+      dockerfile: Dockerfile
     container_name: authworker-1
     expose:
       - 8080
     depends_on:
-      - AuthDatabase
+      AuthDatabase:
+        condition: service_healthy
+      JWTCache:
+        condition: service_started
   authworker-2:
     build:
-      context: .
-      dockerfile: AuthController
+      context: ./auth-service
+      dockerfile: Dockerfile
     container_name: authworker-2
     expose:
       - 8080
     depends_on:
-      - AuthDatabase
+      AuthDatabase:
+        condition: service_healthy
+      JWTCache:
+        condition: service_started
   
   authworker-3:
     build:
-      context: .
-      dockerfile: AuthController
+      context: ./auth-service
+      dockerfile: Dockerfile
     container_name: authworker-3
     expose:
       - 8080
     depends_on:
-      - AuthDatabase
+      AuthDatabase:
+        condition: service_healthy
+      JWTCache:
+        condition: service_started
 
   getserviceworker-1:
     build:
-      context: .
+      context: ./get-service
       dockerfile: GetDockerFile
     container_name: getserviceworker-1
     expose:
@@ -95,8 +116,8 @@ services:
       - AuthDatabase
 
   getserviceworker-2:
-    build: 
-      context: .
+    build:
+      context: ./get-service
       dockerfile: GetDockerFile
     container_name: getserviceworker-2
     expose:
@@ -109,7 +130,7 @@ services:
 
   getserviceworker-3:
     build:
-      context: .
+      context: ./get-service
       dockerfile: GetDockerFile
     container_name: getserviceworker-3
     expose:
