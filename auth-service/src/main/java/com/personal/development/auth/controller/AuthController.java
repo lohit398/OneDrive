@@ -1,17 +1,16 @@
 package com.personal.development.auth.controller;
 
-import com.personal.development.auth.service.AuthHelper;
-
-
-import java.util.Optional;
-import com.personal.development.auth.entity.User;
 import java.net.InetAddress;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.personal.development.auth.entity.User;
+import com.personal.development.auth.service.AuthHelper;
 
 @RestController
 @RequestMapping("/auth")
@@ -36,7 +35,6 @@ public class AuthController {
         }
         Optional<User> userRec= this.authHelper.validateUserNamePassword(username, passwordHash);
         if(!userRec.isEmpty()){
-            String token = this.authHelper.generateToken(userRec.get());
             return this.authHelper.generateToken(userRec.get());
         }
         else return "Please check your username & password.";
@@ -52,10 +50,12 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@RequestParam String username, @RequestParam String password) {
-        // it should be from the body
-        // 
+
         // Logic for user registration
-        // Register the user
+        // Create user record
+        // Send an email for email confirmation
+        // Issue a JWT
+
         return "Registration successful for user: " + username;
     }
 
